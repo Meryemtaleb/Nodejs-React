@@ -14,9 +14,17 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.set('view engine', 'ejs');
 
 require('dotenv').config();
+
+
 //cors
 const cors = require('cors');//Le module cors (Cross-Origin Resource Sharing) est utilisé pour gérer les requêtes entre des domaines différents dans les applications web.L'utilisation de cors peut être utile lorsque vous avez une API ou une application web qui doit être accessible depuis différents domaines ou lorsque vous souhaitez contrôler les autorisations d'accès à vos ressources.
-app.use(cors());
+
+
+var corsOptions = {
+    credentials: true,
+    origin: 'http://localhost:3000'
+};
+app.use(cors(corsOptions));
 
 
 //Mongodb :
@@ -220,7 +228,7 @@ app.post('/submitFilm', function (req, res) {
 app.get('/allfilm', function (req, res) {
     Film.find().then((data) => {
         console.log(data);
-        res.json( data);
+        res.json(data);
     })
 });
 
@@ -321,7 +329,7 @@ app.delete('/post/delete/:id', function(req, res) {
 //Inscription
 app.post('/api/signup', function(req, res) {
     const Data = new User({
-       titre : req.body.username,
+        username : req.body.username,
         email : req.body.email,
         password : bcrypt.hashSync(req.body.password, 10),
         admin: false
@@ -345,7 +353,7 @@ app.get('/login', function(req, res) {
 
 app.post('/api/login', function(req, res) {
     User.findOne({
-       titre: req.body.username
+       username: req.body.username
     }).then((user)=>{
         if(!user)
         {
@@ -362,7 +370,7 @@ app.post('/api/login', function(req, res) {
             httpOnly : true
         });  
         res.redirect('http://localhost:3000/allfilms');
-        // res.json("LOGGED IN !")
+        res.json("LOGGED IN !")
         // console.log("user found");
         // res.render('UserPage', {data: user});
     }).catch((error)=>{console.log(error)});
