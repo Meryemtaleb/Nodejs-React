@@ -1,0 +1,12 @@
+ Pour lundi 12 juin :
+
+    Brief du projet (à quoi sert l’outil, comment est venu l’idée)
+    Maquette du site (présentation parcours client mode prototypage)
+    Cible (Pour qui ? Pour quelle tranche d’âge ? Pour quel type de personne ? CSP ?)
+    Liste des concurrents
+
+    Force
+    Faiblesse
+    En quoi votre application est mieux
+
+    Fonctionnalités techniques

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <%= data %>
+    <%= data.id %>
+
+    <form action="/post/edit/<%= data.id %>?_method=PUT" method="post">
+        <input type="hidden" name="_method" value="PUT">
+        <label for="">Sujet :</label>
+        <input type="text" name="sujet" id="">
+        <label for="">Auteur :</label>
+        <input type="text" name="auteur" id="">
+        <label for="">Description :</label>
+        <textarea name="description" id="" cols="30" rows="10"></textarea>
+        <input type="submit" value="Envoyer">
+    </form>
+
+    <form action="/post/delete/<%= data.id %>?_method=DELETE" method="post">
+        <input type="hidden" name="_method" value="DELETE">
+        <input type="submit" value="Supprimer le post">
+    </form>
+</body>
+</html>

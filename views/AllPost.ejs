@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap -->
+    <%- include('partials/bootstrapCDN.ejs') %>
+    <title>Document</title>
+</head>
+<body>
+    <%- include('partials/navbar.ejs')  %>
+
+    <h1 class="text-center">Bienvenue sur la page</h1>
+    <h3 class="text-center text-decoration-underline">Voici les posts</h3>
+
+    <% data.forEach((post) =>{  %>
+    <div class="card" style="width: 18rem;">
+        <div class="card-body">
+          <h5 class="card-title"><%= post.sujet %></h5>
+          <h6 class="card-subtitle mb-2 text-body-secondary"><%= post.auteur %></h6>
+          <p class="card-text"><%= post.description %></p>
+          <div class="d-flex justify-content-between">
+              <a href="/post/<%= post.id %>" class="btn btn-warning card-link">Edit</a>
+              <form action="/post/delete/<%= post.id %>?_method=DELETE" method="post">
+                <input type="hidden" name="_method" value="DELETE">
+                <input onclick="return confirm('Supprimer ?')" class="btn btn-danger" type="submit" value="Supprimer le post">
+            </form>
+          </div>
+        </div>
+      </div>
+<% } ) %>
+
+</body>
+</html>
