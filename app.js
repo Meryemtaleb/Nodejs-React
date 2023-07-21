@@ -1,7 +1,23 @@
+
+"use strict";
 var express = require('express');
 
+//toobusy
+const toobusy = require('toobusy-js');
 var app = express();
-
+//captcha
+const session = require('express-session')
+const svgCaptcha = require('svg-captcha');
+//pollution des parameters :pour eviter de rajouter des information inutile 
+const hpp = require('hpp');
+app.use(hpp());
+//helmet : proteger les requettes https 
+const helmet = require('helmet');
+app.use(helmet({crossOriginResourcePolicy: false})); 
+//Cache controler : pour vider le cache 
+const nocache = require('nocache');
+app.use(nocache());
+//path
 var path = require('path');
 //cookier parcser
 const cookieParser = require('cookie-parser');
@@ -30,120 +46,55 @@ app.options('*', cors(corsOptions));//socket.io
 app.use(cors(corsOptions));
 
 //********************socket.io***************************
-// const http = require('http');
-// const socketIo = require('socket.io');
-// const server = http.createServer(app);
-// const Message = require('./models/Message');
-  
-// //Donner l'acces au frontend
-// const io = socketIo(server, {
-//     cors: {
-//         origin: 'http://localhost:3000',
-//         methods: ['GET', 'POST'],
-//         allowHeaders: ['Content-type'],
-//         credentials: true
-//     }
-// })
-// io.on('connection', (socket) => {
-//     console.log("Nouveau client connecté");
-  
-//     // Récupération des messages
-//     app.get('/socket',(req,res)=>{
-//     Message.find()
-//       .then((messages) => {
-//         socket.emit('message', messages);
-//         res.render();
-//       })
-//       .catch((error) => {
-//         console.error( error);
-//       });})
-  
-//     // Réception d'un message
-//    app.post('/message', (req,res) => {
-//       console.log("Message reçu");
-//       const Data = new Message({
-//         contenu: req.body.contenu,
-//         date_envoi: new Date(),
-//       });
-  
-//       Data.save()
-//         .then(() => {
-//           console.log('Message stocké dans la base de données');
-//           io.emit('message', Data);
-//         })
-//         .catch((error) => {
-//           console.error('Erreur lors de la sauvegarde du message:', error);
-//         });
-//     });
-  
-//     // Déconnexion d'un client
-//     socket.on('disconnect', () => {
-//       console.log("Connexion fermée");
-//     });
-//   });
 const http = require('http');
-const socketIO=require('socket.io');
+const socketIO = require('socket.io');
 const server = http.createServer(app);
 const Message = require('./models/Message');
 //donne l'acces au frontend
-const io = socketIO(server,{
-    cors:{
-        origin:'http://localhost:3000',
-        methods:['GET','POST'],
-        allowHeaders:['content-Type'],
-        credentials:true
+const io = socketIO(server, {
+    cors: {
+        origin: 'http://localhost:3000',
+        methods: ['GET', 'POST'],
+        allowHeaders: ['content-Type'],
+        credentials: true
     }
 })//connexion
-io.on('connection',(socket)=>{
+io.on('connection', (socket) => {
     console.log('Nouveau client connecter');//un nouveau message
-     socket.on('message',(data)=>{
-        console.log("Received message",data);
-// emit:pour pouvoir envoyer un message au client
-        io.emit('message',data); 
+    socket.on('message', (data) => {
+        console.log("Received message", data);
+        // emit:pour pouvoir envoyer un message au client
+        io.emit('message', data);
         console.log(data);
         const Data = new Message({
-              contenu: data,
-              date_envoi: new Date(),
-            });
-            Data.save()
-              .then(() => {
-                console.log('Message stocké dans la base de données');
-              })
-              .catch((error) => {
-                console.log( error);
-              });
-
+            contenu: data,
+            date_envoi: new Date(),
         });
-    //deconnection
-     socket.on('disconnect',()=>{
-        console.log('disconnected');
-     })
-})
+        Data.save()
+            .then(() => {
+                console.log('Message stocké dans la base de données');
+            })
+            .catch((error) => {
+                console.log(error);
+            });
 
-app.post('/chat', function (req, res) {
-    console.log(req.body);
-    const Data = new MesssageRecu({
-        msgRecu : req.body.msgRecu,
-      });
-      Data.save()
+    });
+    //deconnection
+    socket.on('disconnect', () => {
+        console.log('disconnected');
+    })
+})
+//récuperation de tous les messeges
+app.get('/allchat', (req, res) => {
+    Message.find()
         .then((data) => {
-          console.log('Message Reçu');
-          res.json(data);
+            console.log(data);
+            res.json(data);
         })
         .catch((error) => {
-          console.log( error);
+            console.log(error);
         });
-  })
-app.get('/allchat', function (req, res) {
-    console.log(req.body);
-    MesssageRecu.find()
-    .then(data => {
-        console.log(data);
-        res.json(data);
-    })
-    .catch(err => console.log(err))
-  })
-
+});
 
 //Mongodb :
 var mongoose = require('mongoose');
@@ -174,6 +125,26 @@ app.use(methodOverride('_method'));
 // });
 
 const bcrypt = require('bcrypt');
+
+//Toobusy 
+//pour proteger notre serveur contre les attaques (Dos)
+app.use(function (req, res, next) {
+    if (toobusy()) {
+        res.status(503).send("Server too busy");
+    }
+    else {
+        next();//executer l'action suivante 
+    }
+})
+//svgCaptcha
+app.use(
+    session({
+        secret: "secret-key",
+        resave: false,
+        saveUninitialized: true
+    })
+)
+
 
 
 //Multer
@@ -216,11 +187,13 @@ app.post('/submit-blog', upload.single('file'), function (req, res) {
         const Data = new Blog({
             titre: req.body.titre,
             username: req.body.username,
-            imagename: req.body.imagename
+            imagename: req.body.imagename,
+            content: req.body.content
         })
         Data.save().then(() => {
             console.log("Data saved successfully !");
             res.redirect('/');
+         
         }).catch(err => { console.log(err) });
     }
 })
@@ -233,6 +206,22 @@ app.get('/myblog', function (req, res) {
         .catch(err => console.log(err))
 });
 
+//Captcha
+app.get('/captcha', function (req, res) {
+    const captcha = svgCaptcha.create();
+    req.session.captcha = captcha.text;
+    res.type('svg');
+    res.status(200).send(captcha.data);
+});
+app.post('/verify', function (req, res) {
+    const {userInput} = req.body;
+    if (userInput === req.session.captcha) {
+        res.status(200).send("Captcha valid");
+    }
+    else{
+        res.status(200).send("Captcha invalid");
+    }
+});
 //----------------------------Contact ----------------------------------------------------------------
 
 
