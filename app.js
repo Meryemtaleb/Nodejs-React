@@ -1,22 +1,43 @@
 
 "use strict";
 var express = require('express');
-
-//toobusy
-const toobusy = require('toobusy-js');
 var app = express();
-//captcha
-const session = require('express-session')
-const svgCaptcha = require('svg-captcha');
-//pollution des parameters :pour eviter de rajouter des information inutile 
+
+// Middleware pour éviter la pollution des paramètres HTTP et empêcher l'ajout d'informations inutiles
 const hpp = require('hpp');
 app.use(hpp());
-//helmet : proteger les requettes https 
+
+// Middleware pour sécuriser les requêtes HTTPS et désactiver la politique Cross-Origin Resource Sharing (CORS) pour les ressources statiques
 const helmet = require('helmet');
-app.use(helmet({crossOriginResourcePolicy: false})); 
-//Cache controler : pour vider le cache 
+app.use(helmet({ crossOriginResourcePolicy: false }));
+
+// Middleware pour contrôler le cache et vider le cache des réponses
 const nocache = require('nocache');
 app.use(nocache());
+
+// Middleware toobusy pour protéger le serveur contre les attaques DoS (Denial of Service)
+const toobusy = require('toobusy-js');
+app.use(function (req, res, next) {
+    if (toobusy()) {
+        res.status(503).send("Server too busy");
+    } else {
+        next(); // Exécution de l'action suivante
+    }
+});
+
+// Middleware pour utiliser des captchas SVG
+const session = require('express-session');
+const svgCaptcha = require('svg-captcha');
+app.use(
+    session({
+        secret: "secret-key",
+        resave: false,
+        saveUninitialized: true
+    })
+);
+
+
+
 //path
 var path = require('path');
 //cookier parcser
@@ -126,24 +147,7 @@ app.use(methodOverride('_method'));
 
 const bcrypt = require('bcrypt');
 
-//Toobusy 
-//pour proteger notre serveur contre les attaques (Dos)
-app.use(function (req, res, next) {
-    if (toobusy()) {
-        res.status(503).send("Server too busy");
-    }
-    else {
-        next();//executer l'action suivante 
-    }
-})
-//svgCaptcha
-app.use(
-    session({
-        secret: "secret-key",
-        resave: false,
-        saveUninitialized: true
-    })
-)
+
 
 
 
@@ -177,7 +181,8 @@ app.post('/uploadFiles', upload.array('images', 5), (req, res) => {
         res.send('files uploaded successfully')
     }
 })
-//Blog*****************
+//Blog************************
+
 app.post('/submit-blog', upload.single('file'), function (req, res) {
 
     if (!req.file) {
@@ -193,7 +198,7 @@ app.post('/submit-blog', upload.single('file'), function (req, res) {
         Data.save().then(() => {
             console.log("Data saved successfully !");
             res.redirect('/');
-         
+
         }).catch(err => { console.log(err) });
     }
 })
@@ -205,6 +210,41 @@ app.get('/myblog', function (req, res) {
         })
         .catch(err => console.log(err))
 });
+app.get('/blog/:id', function (req, res) {
+    Blog.findOne({ _id: req.params.id })
+        .then((data) => {
+            res.json(data);
+        })
+        .catch(err => console.log(err));
+});
+
+app.put('/blogedit/:id', upload.single('file'), function (req, res) {
+    if (!req.file) {
+        res.status(400).send('No file uploaded');
+    } else {
+        res.send('file uploaded successfully')
+        const Data = ({
+            titre: req.body.titre,
+            username: req.body.username,
+            imagename: req.body.imagename,
+            content: req.body.content
+        })
+        Blog.updateOne({ _id: req.params.id }, { $set: Data })
+            .then(() => {
+                res.json("data updated")
+            })
+            .catch(err => console.log(err));
+        ;
+    }
+});
+
+app.delete('/blogdelete/:id', function (req, res) {
+    Post.findOneAndDelete({ _id: req.params.id })
+        .then(() => {
+            res.redirect('http://localhost:3000/blog')
+        })
+        .catch(err => console.log(err));
+});
 
 //Captcha
 app.get('/captcha', function (req, res) {
@@ -214,11 +254,11 @@ app.get('/captcha', function (req, res) {
     res.status(200).send(captcha.data);
 });
 app.post('/verify', function (req, res) {
-    const {userInput} = req.body;
+    const { userInput } = req.body;
     if (userInput === req.session.captcha) {
         res.status(200).send("Captcha valid");
     }
-    else{
+    else {
         res.status(200).send("Captcha invalid");
     }
 });
@@ -311,6 +351,7 @@ app.delete('/contact/delete/:id', function (req, res) {
         })
         .catch(err => console.log(err))
 });
+
 
 //-----------------Film------------------------------------------------
 
