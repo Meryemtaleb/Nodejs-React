@@ -239,9 +239,10 @@ app.put('/blogedit/:id', upload.single('file'), function (req, res) {
 });
 
 app.delete('/blogdelete/:id', function (req, res) {
-    Post.findOneAndDelete({ _id: req.params.id })
+    Blog.findOneAndDelete({ _id: req.params.id })
         .then(() => {
             res.redirect('http://localhost:3000/blog')
+            // res.json("deleted")
         })
         .catch(err => console.log(err));
 });
